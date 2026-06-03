@@ -3,7 +3,21 @@
   "compilerOptions": {
     "rootDir": "src",
     "outDir": "dist",
-    "sourceMap": true
+    "sourceMap": true,
+    "types": ["node"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "target": "ES2023",
+    "strict": true,
+    "esModuleInterop": true,
+    "paths": {
+      "@prisma-client": ["./src/lib/prisma.ts"],
+      "@lib/*": ["./src/lib/*"]
+    }
   },
-  "include": ["src/**/*.ts"]
+
+  "include": ["src/**/*.ts"],
+  "tsc-alias": {
+    "resolveFullPaths": true
+  }
 }

@@ -16,6 +16,15 @@
     "dev": {
       "cache": false,
       "persistent": true
+    },
+    "api#build": {
+      "dependsOn": ["^build"],
+      "env": ["DATABASE_URL"]
+    },
+    "api#dev": {
+      "cache": false,
+      "persistent": true,
+      "env": ["DATABASE_URL"]
     }
   }
 }
