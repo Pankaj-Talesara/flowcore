@@ -1,9 +1,10 @@
-import { generateAndAttachAuthTokens } from '@lib/auth'
+import { generateAndAttachAuthTokens, removeAuthTokens, verifyRefreshToken } from '@lib/auth'
 import { prisma } from '@prisma-client'
 import {
   ICreateOrUpdateUserPayload,
   IUserLoginPayload,
   TCreateOrUpdateUserResponse,
+  TRefreshTokenResponse,
 } from '@repo/types/auth'
 import bcrypt from 'bcrypt'
 import { type FastifyPluginAsync } from 'fastify'
@@ -63,7 +64,7 @@ const root: FastifyPluginAsync = async (fastify): Promise<void> => {
 
     generateAndAttachAuthTokens(user, reply)
 
-    return { message: 'Auth token added to cookies.', userId: String(user.id) }
+    return { message: 'Auth token added to cookies.', userId: user.id }
   })
 
   fastify.post<{
@@ -92,7 +93,40 @@ const root: FastifyPluginAsync = async (fastify): Promise<void> => {
 
     generateAndAttachAuthTokens(user, reply)
 
-    return { message: 'Auth token added to cookies.', userId: String(user.id) }
+    return { message: 'Auth token added to cookies.', userId: user.id }
+  })
+
+  fastify.delete('/logout', async function (_, reply): Promise<{ message: string }> {
+    removeAuthTokens(reply)
+
+    return { message: 'Auth tokens removed. You may logout now' }
+  })
+
+  fastify.post('/refresh', async function (request, reply): Promise<TRefreshTokenResponse> {
+    const { refreshToken } = request.cookies || {}
+
+    if (!refreshToken) {
+      reply.status(401)
+      return { code: 'NO_TOKEN_FOUND', message: 'No refresh token found in cookie' }
+    }
+
+    const userJwt = verifyRefreshToken(refreshToken)
+
+    if (!userJwt) {
+      reply.status(401)
+      return { code: 'INVALID_TOKEN', message: 'Token is not a valid token.' }
+    }
+
+    const user = await prisma.user.findFirst({ where: { id: userJwt.userId } })
+
+    if (!user) {
+      reply.status(401)
+      return { code: 'INVALID_TOKEN', message: 'Token is not a valid token.' }
+    }
+
+    generateAndAttachAuthTokens(user, reply, false)
+
+    return { userId: user.id, message: 'Auth tokens refreshed in cookies' }
   })
 }
 

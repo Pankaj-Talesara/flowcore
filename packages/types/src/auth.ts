@@ -15,3 +15,14 @@ export interface IUserLoginPayload {
   email: string
   password: string
 }
+
+export type UserJwtPayload = {
+  email: string
+  userId: string
+  name: string
+}
+
+export type TRefreshTokenResponse = WithError<{
+  message: string
+  userId: string
+}>

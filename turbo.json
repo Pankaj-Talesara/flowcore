@@ -24,7 +24,8 @@
         "AUTH_SECRET",
         "AUTH_SECRET_EXPIRES_IN",
         "AUTH_REFRESH_SECRET",
-        "AUTH_REFRESH_SECRET_EXPIRES_IN"
+        "AUTH_REFRESH_SECRET_EXPIRES_IN",
+        "NODE_ENV"
       ]
     },
     "api#dev": {
@@ -35,7 +36,8 @@
         "AUTH_SECRET",
         "AUTH_SECRET_EXPIRES_IN",
         "AUTH_REFRESH_SECRET",
-        "AUTH_REFRESH_SECRET_EXPIRES_IN"
+        "AUTH_REFRESH_SECRET_EXPIRES_IN",
+        "NODE_ENV"
       ]
     }
   }
