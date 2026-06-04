@@ -2,6 +2,7 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import AutoLoad, { AutoloadPluginOptions } from '@fastify/autoload'
 import { FastifyPluginAsync, FastifyServerOptions } from 'fastify'
+import fastifyCookie from '@fastify/cookie'
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
 
@@ -22,6 +23,8 @@ const app: FastifyPluginAsync<AppOptions> = async (fastify, opts): Promise<void>
     dir: join(__dirname, 'plugins'),
     options: opts,
   })
+
+  await fastify.register(fastifyCookie)
 
   // This loads all plugins defined in routes
   // define your routes in one of these

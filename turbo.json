@@ -19,12 +19,24 @@
     },
     "api#build": {
       "dependsOn": ["^build"],
-      "env": ["DATABASE_URL"]
+      "env": [
+        "DATABASE_URL",
+        "AUTH_SECRET",
+        "AUTH_SECRET_EXPIRES_IN",
+        "AUTH_REFRESH_SECRET",
+        "AUTH_REFRESH_SECRET_EXPIRES_IN"
+      ]
     },
     "api#dev": {
       "cache": false,
       "persistent": true,
-      "env": ["DATABASE_URL"]
+      "env": [
+        "DATABASE_URL",
+        "AUTH_SECRET",
+        "AUTH_SECRET_EXPIRES_IN",
+        "AUTH_REFRESH_SECRET",
+        "AUTH_REFRESH_SECRET_EXPIRES_IN"
+      ]
     }
   }
 }

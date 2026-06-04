@@ -1,10 +1,17 @@
+import { WithError } from './common.js'
+
 export interface ICreateOrUpdateUserPayload {
   email: string
   password: string
+  name: string
 }
 
-export interface ICreateOrUpdateUserResponse {
-  accessToken: string
-  refreshToken: string
+export type TCreateOrUpdateUserResponse = WithError<{
+  message: string
   userId: string
+}>
+
+export interface IUserLoginPayload {
+  email: string
+  password: string
 }
