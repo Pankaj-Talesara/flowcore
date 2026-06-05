@@ -5,36 +5,19 @@ description: Common code conventions that apply across the whole repo (not tied 
 
 # Common conventions
 
-Rules that hold everywhere in this repo. More specific skills (use-react-query,
-add-shadcn-component, …) build on top of these — they never override them.
+Hold everywhere. More specific skills build on these, never override them.
 
 ## React imports
 
-**Always import the named bindings you use from `react`. Never use a namespace
-import or the `React.` qualifier.**
+Import named bindings from `react`. Never a namespace import or `React.` qualifier.
 
 ```ts
-// ✅ do this
-import { useState, useEffect, type FormEvent, type ReactNode } from 'react'
-
-const [open, setOpen] = useState(false)
-function onSubmit(e: FormEvent<HTMLFormElement>) { /* … */ }
-type Props = { children: ReactNode }
+// ✅
+import { useState, type FormEvent, type ReactNode } from 'react'
+// ❌
+import * as React from 'react'   // then React.useState, e: React.FormEvent
 ```
 
-```ts
-// ❌ never
-import * as React from 'react'
-import React from 'react'
-
-React.useState(false)
-React.FormEvent
-e: React.FormEvent<HTMLFormElement>
-```
-
-- This applies to **values** (`useState`, `useRef`, `useCallback`, …), **types**
-  (`ReactNode`, `FormEvent`, `ComponentProps`, `Dispatch`, …), and everything
-  else off the `React` namespace — import each by name instead.
-- The app uses the modern JSX transform, so `React` does not need to be in scope
-  to render JSX. There is no reason to import the namespace.
-- Use `import type { … }` (or inline `type`) for type-only React imports.
+- Applies to values (`useState`, `useRef`, …) **and** types (`ReactNode`, `FormEvent`, `ComponentProps`, …) — import each by name.
+- Modern JSX transform: `React` need not be in scope to render JSX.
+- Use `import type { … }` (or inline `type`) for type-only imports.

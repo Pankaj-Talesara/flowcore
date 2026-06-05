@@ -5,41 +5,21 @@ description: Add or change a database model in the Fastify API's Prisma schema, 
 
 # Add / change a Prisma model in `apps/api`
 
-The database layer lives in [apps/api](../../../apps/api/). Postgres + Prisma 7,
-driven by the `@prisma/adapter-pg` driver adapter. Everything is keyed off
-`DATABASE_URL` (loaded via `dotenv`).
-
-## The moving parts
+Postgres + Prisma 7 via `@prisma/adapter-pg`, keyed off `DATABASE_URL` (loaded by `dotenv`).
 
 | Path | Role |
 | --- | --- |
-| [prisma/schema.prisma](../../../apps/api/prisma/schema.prisma) | The schema — datasource + `User` model. **Edit models here.** |
-| [prisma.config.ts](../../../apps/api/prisma.config.ts) | Prisma config — points at the schema, the `prisma/migrations` dir, and the `DATABASE_URL`. |
-| [prisma/migrations/](../../../apps/api/prisma/migrations/) | Generated SQL migrations (committed). |
-| `src/generated/prisma/` | **Generated client + row types** (`User`, `PrismaClient`, …). `output` in the generator block. Do not hand-edit. |
-| [src/lib/prisma.ts](../../../apps/api/src/lib/prisma.ts) | The single `PrismaClient` instance, exported via the `@prisma-client` alias. |
+| [prisma/schema.prisma](../../../apps/api/prisma/schema.prisma) | Schema — datasource + models. **Edit here.** |
+| [prisma.config.ts](../../../apps/api/prisma.config.ts) | Points at schema, migrations dir, `DATABASE_URL`. |
+| [prisma/migrations/](../../../apps/api/prisma/migrations/) | Generated SQL (committed). |
+| `src/generated/prisma/` | Generated client + row types. Do not hand-edit. |
+| [src/lib/prisma.ts](../../../apps/api/src/lib/prisma.ts) | The single `PrismaClient`, exported as `@prisma-client`. |
 
-The generator is configured for the **new `prisma-client` provider** (not the
-legacy `prisma-client-js`), ESM, with `importFileExtension = "js"`:
-
-```prisma
-generator client {
-  provider            = "prisma-client"
-  output              = "../src/generated/prisma"
-  moduleFormat        = "esm"
-  importFileExtension = "js"
-}
-```
+Generator uses the new `prisma-client` provider (not `prisma-client-js`), ESM, `importFileExtension = "js"`, `output = "../src/generated/prisma"`.
 
 ## Steps
 
-1. **Edit the model** in
-   [prisma/schema.prisma](../../../apps/api/prisma/schema.prisma). Match the
-   `User` conventions — `String @id @default(uuid(7))` for ids, explicit
-   `createdAt DateTime @default(now())` and `updatedAt DateTime` (note: `updatedAt`
-   has **no `@updatedAt`** here, so route code sets `updatedAt: new Date()`
-   explicitly on create/update — see
-   [auth/index.ts](../../../apps/api/src/routes/auth/index.ts)):
+1. **Edit the model** in [schema.prisma](../../../apps/api/prisma/schema.prisma). Match `User`: `String @id @default(uuid(7))` ids, `createdAt DateTime @default(now())`, and `updatedAt DateTime` with **no `@updatedAt`** — so route code sets `updatedAt: new Date()` explicitly on create/update.
 
    ```prisma
    model Project {
@@ -52,54 +32,31 @@ generator client {
    }
    ```
 
-   Add the inverse relation field on the other model (`projects Project[]` on
-   `User`) for relations.
+   For relations, add the inverse field on the other model (`projects Project[]` on `User`).
 
-2. **Create the migration + regenerate the client** from `apps/api`:
+2. **Migrate + regenerate** from `apps/api`:
 
    ```bash
-   cd apps/api
-   pnpm exec prisma migrate dev --name <change_description>
+   cd apps/api && pnpm exec prisma migrate dev --name <change_description>
    ```
 
-   `migrate dev` applies the SQL to the dev DB, writes a new folder under
-   `prisma/migrations/`, **and** runs `prisma generate` (refreshing
-   `src/generated/prisma/`). If you only changed the generator/regen without a
-   schema change, run `pnpm exec prisma generate`.
+   This applies SQL, writes a migration folder, **and** runs `prisma generate`. For a generator-only change, run `pnpm exec prisma generate`.
 
-3. **Use the model** in routes via the shared client and generated row types —
-   never instantiate `PrismaClient` ad hoc:
+3. **Use it** via the shared client + generated row types — never instantiate `PrismaClient` ad hoc:
 
    ```ts
    import { prisma } from '@prisma-client'
    import { Project } from '../../generated/prisma/client'
 
-   const project = await prisma.project.create({
-     data: { name, ownerId, updatedAt: new Date() },
-   })
+   await prisma.project.create({ data: { name, ownerId, updatedAt: new Date() } })
    ```
 
-   For an API response shape, wrap the row type in the shared envelope:
-   `WithError<Project>` from `@repo/types/common` (see the `add-domain-type` and
-   `add-fastify-route` skills).
+   For a response shape, wrap in `WithError<Project>` (see `add-domain-type`, `add-fastify-route`).
 
-4. **Verify**:
-
-   ```bash
-   pnpm --filter api exec tsc --noEmit
-   pnpm --filter api lint
-   ```
+4. Verify: `pnpm --filter api exec tsc --noEmit && pnpm --filter api lint`
 
 ## Notes
 
-- **Migrations are committed**; the generated client (`src/generated/prisma/`)
-  is generated output — check the repo's ignore rules before committing it, and
-  regenerate with `prisma generate` after pulling a schema change.
-- `prisma migrate dev` needs a reachable `DATABASE_URL`. For CI / prod, use
-  `prisma migrate deploy` (applies committed migrations, never prompts).
-- Production data: prefer additive migrations; a column rename or type change
-  Prisma can't do safely will prompt to reset the dev DB — review the generated
-  SQL before applying anywhere with real data.
-- The shared client uses the pg driver adapter
-  ([src/lib/prisma.ts](../../../apps/api/src/lib/prisma.ts)); keep that the only
-  place a `PrismaClient` is constructed.
+- Migrations are committed; the generated client is output (check ignore rules; regenerate after pulling a schema change).
+- `migrate dev` needs a reachable `DATABASE_URL`. CI/prod: `prisma migrate deploy` (never prompts).
+- Prefer additive migrations; a rename/type change may prompt to reset the dev DB — review the generated SQL before applying to real data.

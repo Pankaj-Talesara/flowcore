@@ -5,74 +5,39 @@ description: Fetch or mutate server data in the web app (apps/web) with TanStack
 
 # Use React Query in `apps/web`
 
-The web app uses [TanStack React Query](https://tanstack.com/query) for all
-client-side server-state. The `QueryClientProvider` is already mounted in the
-root layout via [components/query-provider.tsx](../../../apps/web/components/query-provider.tsx),
-so any Client Component can call the hooks directly.
+[TanStack React Query](https://tanstack.com/query) for all client-side server-state. `QueryClientProvider` is mounted in the root layout ([query-provider.tsx](../../../apps/web/components/query-provider.tsx)) — any Client Component can call the hooks.
 
-## The layers (keep them separate)
-
-1. **`lib/instance.ts` — the shared axios client.** Exports one `apiClient`
-   ([axios](https://axios-http.com) instance) created with `baseURL` +
-   `withCredentials: true` so the httpOnly auth cookies are sent cross-origin.
-   This is the only axios instance; never call `axios.create` elsewhere.
-2. **`lib/apiUrls.ts` — the route registry.** Every API path lives here, one
-   entry per route. Hooks reference `apiUrls.auth.login`, never a string
-   literal like `'/auth/login'`. Add the path here first, then use it.
-3. **`react-query/*.ts` — the hooks layer.** One file per resource
-   (`react-query/auth.ts`, `react-query/workflows.ts`, …). Each exports
-   `useXxx()` hooks that wrap `useMutation`/`useQuery`. The `mutationFn`/`queryFn`
-   is **defined inline inside the hook** and calls `apiClient` directly with a
-   path from `apiUrls`. **This is the only place `@tanstack/react-query` and
-   `apiClient` are imported.**
-4. **Components** import the `useXxx()` hooks — never `useMutation`/`useQuery`,
-   `apiClient`, or `apiUrls` themselves.
+## Layers (never skipped)
 
 ```
 component  ──>  react-query/<resource>.ts  ──>  apiClient + apiUrls  ──>  API
-(useLogin)      (useMutation/useQuery,            (lib/instance.ts,
-                 inline mutationFn/queryFn)         lib/apiUrls.ts)
+(useLogin)      (useMutation/useQuery,           (lib/instance.ts,
+                 inline mutationFn/queryFn)        lib/apiUrls.ts)
 ```
 
-> React Query hooks only run in **Client Components** (`'use client'`). For
-> server-side data loading, fetch in a Server Component instead.
+1. **`lib/instance.ts`** — the one `apiClient` (axios) with `baseURL` + `withCredentials: true` (sends httpOnly auth cookies). Never `axios.create` elsewhere.
+2. **`lib/apiUrls.ts`** — route registry, one entry per path. Add the path here first; hooks reference `apiUrls.auth.login`, never a literal.
+3. **`react-query/*.ts`** — hooks, one file per resource. `mutationFn`/`queryFn` defined **inline** in the hook, calling `apiClient` with an `apiUrls` path. **Only place** `@tanstack/react-query` + `apiClient` are imported.
+4. **Components** import `useXxx()` hooks only — never `useMutation`/`useQuery`/`apiClient`/`apiUrls` directly.
 
-## Step 1: add the route to `lib/apiUrls.ts`
+> Hooks run only in Client Components (`'use client'`). For server-side loading, fetch in a Server Component.
 
-[lib/apiUrls.ts](../../../apps/web/lib/apiUrls.ts) is the single source of truth
-for paths. Paths are relative — `apiClient` prepends the `baseURL`.
+## Step 1 — add the route to [lib/apiUrls.ts](../../../apps/web/lib/apiUrls.ts)
+
+Relative paths (`apiClient` prepends `baseURL`). Group by resource; use a function entry for params:
 
 ```ts
 export const apiUrls = {
-  auth: {
-    login: '/auth/login',
-    register: '/auth/register',
-  },
-  workflows: {
-    list: '/workflows',
-    create: '/workflows',
-    byId: (id: string) => `/workflows/${id}`,
-  },
+  auth: { login: '/auth/login', register: '/auth/register' },
+  workflows: { list: '/workflows', create: '/workflows', byId: (id: string) => `/workflows/${id}` },
 } as const
 ```
 
-- Group by resource. Use a function entry for parameterized paths (`byId`).
-- **Never** hardcode a path string inside a hook — add it here and reference it.
+## Step 2 — add a hook in `react-query/`
 
-## Step 2: add a hook in `react-query/`
-
-See [react-query/auth.ts](../../../apps/web/react-query/auth.ts). The
-`mutationFn`/`queryFn` is written **inline in the hook options** — there is no
-separate fetcher file to import from. The fn calls `apiClient` with a path from
-`apiUrls`.
-
-Hooks accept a pass-through `options` (everything but the key and the
-`mutationFn`/`queryFn`), so a component can attach `onSuccess`/`onError` without
-the hook hard-coding navigation. Type the options with `UseMutationOptions`
-(error typed as `AxiosError`) so callers and `mutation.error` stay typed.
+See [react-query/auth.ts](../../../apps/web/react-query/auth.ts). `mutationFn`/`queryFn` are inline (no separate fetcher module). Accept a pass-through `options` (typed with `UseMutationOptions`, error as `AxiosError`) so callers attach `onSuccess`/`onError` without the hook hard-coding navigation. Type request/response with `@repo/types`.
 
 ```ts
-// react-query/auth.ts
 'use client'
 import { apiClient } from '@/lib/instance'
 import { apiUrls } from '@/lib/apiUrls'
@@ -81,18 +46,12 @@ import { useMutation, type UseMutationOptions } from '@tanstack/react-query'
 import type { AxiosError } from 'axios'
 
 export function useLogin(
-  options?: Omit<
-    UseMutationOptions<TCreateOrUpdateUserResponse, AxiosError, IUserLoginPayload>,
-    'mutationKey' | 'mutationFn'
-  >,
+  options?: Omit<UseMutationOptions<TCreateOrUpdateUserResponse, AxiosError, IUserLoginPayload>, 'mutationKey' | 'mutationFn'>,
 ) {
   return useMutation({
     mutationKey: ['LOGIN'],
     mutationFn: async (payload) => {
-      const { data } = await apiClient.post<TCreateOrUpdateUserResponse>(
-        apiUrls.auth.login,
-        payload,
-      )
+      const { data } = await apiClient.post<TCreateOrUpdateUserResponse>(apiUrls.auth.login, payload)
       return data
     },
     ...options,
@@ -100,47 +59,32 @@ export function useLogin(
 }
 ```
 
-A query hook follows the same shape, with `invalidateQueries` to refetch a list
-a mutation changed:
+Query + invalidation on mutation:
 
 ```ts
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-
 export function useWorkflows() {
   return useQuery({
     queryKey: ['workflows'],
-    queryFn: async () => {
-      const { data } = await apiClient.get<TWorkflowsResponse>(apiUrls.workflows.list)
-      return data
-    },
+    queryFn: async () => (await apiClient.get<TWorkflowsResponse>(apiUrls.workflows.list)).data,
   })
 }
 
-export function useCreateWorkflow(options?: /* UseMutationOptions<…> */) {
+export function useCreateWorkflow(options?) {
   const qc = useQueryClient()
   return useMutation({
     mutationKey: ['CREATE_WORKFLOW'],
-    mutationFn: async (payload) => {
-      const { data } = await apiClient.post<TWorkflowResponse>(apiUrls.workflows.create, payload)
-      return data
-    },
+    mutationFn: async (payload) => (await apiClient.post<TWorkflowResponse>(apiUrls.workflows.create, payload)).data,
     onSuccess: () => qc.invalidateQueries({ queryKey: ['workflows'] }),
     ...options,
   })
 }
 ```
 
-- **`queryKey`/`mutationKey` are defined inline** in the hook — there is no
-  central keys file. Include every input the key depends on:
-  `queryKey: ['workflows', id]`. Same key → shared cache. The key a query reads
-  and the key a mutation invalidates must match — keep them as matching literals
-  in the same resource file.
-- Type the request/response with `@repo/types`. Don't redeclare shapes.
+- `queryKey`/`mutationKey` are **inline** (no central keys file). List every dependency (`['workflows', id]`). The key a query reads and a mutation invalidates must match — keep them as matching literals in the same resource file.
 
-## Step 3: use the hook in a component
+## Step 3 — use in a component
 
-See [app/(auth)/login/page.tsx](<../../../apps/web/app/(auth)/login/page.tsx>)
-and [app/(auth)/signup/page.tsx](<../../../apps/web/app/(auth)/signup/page.tsx>).
+See [login](<../../../apps/web/app/(auth)/login/page.tsx>), [signup](<../../../apps/web/app/(auth)/signup/page.tsx>).
 
 ```tsx
 'use client'
@@ -149,52 +93,21 @@ import { translateError } from '@/lib/errors'
 import { useTranslations } from 'next-intl'
 
 const tErr = useTranslations('Errors')
-const mutation = useLogin({
-  onSuccess: () => {
-    /* navigate, etc. */
-  },
-})
+const mutation = useLogin({ onSuccess: () => { /* navigate */ } })
 
-mutation.mutate({ email, password }) // in the submit handler
-mutation.isPending // -> drive the submit button's disabled/spinner state
-const error = translateError(mutation.error, tErr) // localized via the API error code
+mutation.mutate({ email, password })                 // submit handler
+mutation.isPending                                    // drive disabled/spinner — not local useState
+const error = translateError(mutation.error, tErr)    // localized via API error code
 ```
 
-For a query:
-
-```tsx
-'use client'
-import { useWorkflows } from '@/react-query/workflows'
-const { data, isLoading, error } = useWorkflows()
-```
-
-- Drive the submit button's pending state from `mutation.isPending`, not local
-  `useState`.
-- Map errors through [lib/errors.ts](../../../apps/web/lib/errors.ts) so the API
-  error `code` becomes localized copy (see the **use-next-intl** skill). Don't
-  surface raw `err.message`.
+Query: `const { data, isLoading, error } = useWorkflows()`.
 
 ## Conventions
 
-- **Layers, never skipped:** component → `react-query/<resource>` →
-  `apiClient` + `apiUrls`. A component importing `@tanstack/react-query`,
-  `apiClient`, or `apiUrls` directly is a smell.
-- `mutationFn`/`queryFn` live **inline** in the hook options — do not extract
-  them into a separate `lib/api.ts` fetcher module.
-- Every API path lives in `lib/apiUrls.ts`; hooks reference it, never a literal.
-- `queryKey`/`mutationKey` are defined inline in the hook, not in a central
-  registry; list every dependency in the key and keep read/invalidate keys
-  matching within the resource file.
-- All axios config (`baseURL`, `withCredentials`, headers) lives on the single
-  `apiClient` in `lib/instance.ts`. Hooks don't repeat it.
-- Prefer mutating + `invalidateQueries` over manually editing the cache.
-- Errors surface as axios errors; translate via `lib/errors.ts`
-  (`translateError` reads `error.response.data.code`).
+- Layers never skipped; a component importing `@tanstack/react-query`/`apiClient`/`apiUrls` is a smell.
+- `mutationFn`/`queryFn` inline; no `lib/api.ts` fetcher module.
+- Every path in `lib/apiUrls.ts`; all axios config on the single `apiClient`.
+- Prefer mutate + `invalidateQueries` over editing the cache manually.
+- Translate errors via [lib/errors.ts](../../../apps/web/lib/errors.ts) (`translateError` reads `error.response.data.code`; see `use-next-intl`) — don't surface raw `err.message`.
 
-## Verify
-
-```bash
-pnpm --filter web check-types
-pnpm --filter web lint
-pnpm --filter web build
-```
+Verify: `pnpm --filter web check-types && pnpm --filter web lint && pnpm --filter web build`
