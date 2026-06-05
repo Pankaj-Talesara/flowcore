@@ -17,6 +17,16 @@
       "cache": false,
       "persistent": true
     },
+    "web#build": {
+      "dependsOn": ["^build"],
+      "env": ["API_ORIGIN"],
+      "outputs": [".next/**", "!.next/cache/**"]
+    },
+    "web#dev": {
+      "cache": false,
+      "persistent": true,
+      "env": ["API_ORIGIN"]
+    },
     "api#build": {
       "dependsOn": ["^build"],
       "env": [
@@ -25,7 +35,8 @@
         "AUTH_SECRET_EXPIRES_IN",
         "AUTH_REFRESH_SECRET",
         "AUTH_REFRESH_SECRET_EXPIRES_IN",
-        "NODE_ENV"
+        "NODE_ENV",
+        "COOKIE_DOMAIN"
       ]
     },
     "api#dev": {
@@ -37,7 +48,8 @@
         "AUTH_SECRET_EXPIRES_IN",
         "AUTH_REFRESH_SECRET",
         "AUTH_REFRESH_SECRET_EXPIRES_IN",
-        "NODE_ENV"
+        "NODE_ENV",
+        "COOKIE_DOMAIN"
       ]
     }
   }

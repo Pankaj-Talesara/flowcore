@@ -6,9 +6,9 @@ import {
   TCreateOrUpdateUserResponse,
   TRefreshTokenResponse,
 } from '@repo/types/auth'
+import { registrationSchema } from '@repo/utils/schema'
 import bcrypt from 'bcrypt'
 import { type FastifyPluginAsync } from 'fastify'
-import { registrationSchema } from '../../validators/auth'
 
 const root: FastifyPluginAsync = async (fastify): Promise<void> => {
   fastify.post<{
@@ -16,10 +16,10 @@ const root: FastifyPluginAsync = async (fastify): Promise<void> => {
   }>('/register', async function ({ body }, reply): Promise<TCreateOrUpdateUserResponse> {
     const isUserWithEmailExist = await prisma.user.findFirst({ where: { email: body.email } })
 
-    const validations = registrationSchema.validate(body)
+    const validations = registrationSchema.safeParse(body)
 
-    if (validations.error?.details.length) {
-      const errorKey = validations.error.details[0]?.path[0]
+    if (!validations.success) {
+      const errorKey = validations.error.issues[0]?.path[0]
       reply.status(422)
 
       switch (errorKey) {

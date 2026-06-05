@@ -1,0 +1,80 @@
+{
+  "Common": {
+    "appName": "Flowcore"
+  },
+  "Nav": {
+    "signIn": "Iniciar sesión",
+    "getStarted": "Comenzar"
+  },
+  "Home": {
+    "badge": "Automatización de flujos autoalojada",
+    "title": "Conecta una herramienta con otra, sin código pegamento.",
+    "subtitle": "Flowcore es un mini-Zapier centrado en el backend que tú mismo alojas. Define automatizaciones basadas en eventos de forma declarativa: nosotros gestionamos la ingesta, las colas, la ejecución, los reintentos y el registro por paso.",
+    "ctaPrimary": "Crea tu espacio de trabajo",
+    "ctaSecondary": "Iniciar sesión",
+    "features": {
+      "triggers": {
+        "title": "Disparadores",
+        "body": "Inicia un flujo desde una URL de webhook única o una programación cron."
+      },
+      "steps": {
+        "title": "Pasos",
+        "body": "Encadena http, ai_summarize, slack_post y jira_fetch. La salida N alimenta a N+1."
+      },
+      "executions": {
+        "title": "Ejecuciones",
+        "body": "Cada ejecución se encola, se reintenta con backoff y se registra paso a paso."
+      }
+    }
+  },
+  "BrandPanel": {
+    "title": "Conecta cualquier herramienta con cualquier otra.",
+    "subtitle": "Automatizaciones basadas en eventos, definidas de forma declarativa. Nosotros gestionamos la cola, los reintentos, la programación y los registros por paso: tú describes el flujo.",
+    "footer": "Autoalojado · multiinquilino · auth JWT · aislamiento por espacio de trabajo",
+    "stages": {
+      "trigger": { "badge": "DISPARADOR", "title": "Ticket de Jira creado" },
+      "step1": { "badge": "PASO 1", "title": "ai_summarize" },
+      "step2": { "badge": "PASO 2", "title": "slack_post" },
+      "execution": { "badge": "EJECUCIÓN", "title": "completado · 842ms" }
+    }
+  },
+  "Fields": {
+    "name": "Nombre",
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "namePlaceholder": "Ada Lovelace",
+    "emailPlaceholder": "tu@empresa.com",
+    "passwordPlaceholder": "••••••••",
+    "passwordHint": "8–30 caracteres, letras y números."
+  },
+  "Login": {
+    "title": "Bienvenido de nuevo",
+    "subtitle": "Inicia sesión para gestionar tus flujos y ejecuciones.",
+    "submit": "Iniciar sesión",
+    "submitPending": "Iniciando sesión…",
+    "noAccount": "¿Nuevo en Flowcore?",
+    "createAccount": "Crea una cuenta",
+    "missingFields": "Introduce tu correo y contraseña."
+  },
+  "Signup": {
+    "title": "Crea tu espacio de trabajo",
+    "subtitle": "Empieza a crear automatizaciones basadas en eventos en minutos.",
+    "submit": "Crear cuenta",
+    "submitPending": "Creando cuenta…",
+    "haveAccount": "¿Ya tienes una cuenta?",
+    "signIn": "Iniciar sesión",
+    "validation": {
+      "name": "El nombre debe tener entre 3 y 15 letras o espacios, sin caracteres especiales.",
+      "email": "Introduce una dirección de correo válida.",
+      "password": "La contraseña debe tener entre 8 y 30 caracteres, solo letras y números."
+    }
+  },
+  "Errors": {
+    "GENERIC": "Algo salió mal. Inténtalo de nuevo.",
+    "NETWORK_ERROR": "No se pudo conectar con el servidor. ¿Está la API en ejecución?",
+    "INVALID_EMAIL": "Ese correo no es válido o no está registrado.",
+    "INVALID_PASSWORD": "Contraseña incorrecta. Inténtalo de nuevo.",
+    "INVALID_NAME": "El nombre debe tener entre 3 y 15 letras sin caracteres especiales.",
+    "EMAIL_ALREADY_EXISTS": "Ya existe una cuenta con ese correo."
+  }
+}

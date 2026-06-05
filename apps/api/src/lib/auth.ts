@@ -9,6 +9,7 @@ export const cookieDefaults: CookieSerializeOptions = {
   httpOnly: true,
   sameSite: 'lax',
   secure: process.env.NODE_ENV === 'production',
+  domain: process.env.COOKIE_DOMAIN || undefined,
 }
 
 export const generateAndAttachAuthTokens = (

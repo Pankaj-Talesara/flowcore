@@ -2,11 +2,18 @@
 
 Shared, framework-agnostic contracts for the Flowcore monorepo — the single
 source of truth for what the API sends and accepts. Consumed by both the
-Fastify backend (`apps/api`) and the Next.js frontend.
+Fastify backend (`apps/api`) and the Next.js frontend (`apps/web`).
 
-This package has **no runtime dependencies**. Most exports are type-only; the
-handful of runtime values (`HttpStatus`, `ErrorCode`, `ok()`, `fail()`,
-`buildPageMeta()`) are tiny pure helpers.
+This is a **type-only package**: every export is erased at compile time, so
+there is **no build step and no `dist/`**. `package.json` exports the source
+files directly:
+
+```jsonc
+"exports": { "./*": "./src/*.ts" }
+```
+
+A file `src/<feature>.ts` is therefore imported as `@repo/types/<feature>`.
+There is **no barrel `index`** — import the specific module you need.
 
 ## Install
 
@@ -19,56 +26,60 @@ It's already wired as a workspace dependency. To add it to another app:
 }
 ```
 
-Then `pnpm install`. Turbo builds `@repo/types` before any dependent (`build`
-already `dependsOn: ["^build"]`).
+Then `pnpm install`. Nothing to build — consumers resolve the `.ts` source.
+
+## The error envelope
+
+Every fallible response is the union `WithError<T>` from `./common`. A handler
+returns either the success payload `T` **or** an `ICommonErrorResponse`
+(`{ code, message }`). There is **no `ok()`/`fail()` helper and no `success`
+field** — the HTTP status is set on the Fastify route via `reply.status(...)`.
+
+```ts
+// packages/types/src/common.ts
+export interface ICommonErrorResponse {
+  code: string
+  message: string
+}
+export type WithError<T> = T | ICommonErrorResponse
+```
 
 ## Usage
 
 ```ts
-import { ok, fail, ErrorCode, type ApiResponse } from '@repo/types'
-import type { User, CreateUserPayload } from '@repo/types/domain'
+import { WithError } from '@repo/types/common'
+import { ICreateOrUpdateUserPayload, TCreateOrUpdateUserResponse } from '@repo/types/auth'
 
-// Backend — Fastify handler
-async function createUser(body: CreateUserPayload): Promise<ApiResponse<User>> {
-  const user = await users.create(body)
-  return ok(user)
-}
-
-// Frontend — typed fetch
-const res: ApiResponse<User> = await api.post('/users', payload)
-if (res.ok) {
-  console.log(res.data.email)
-} else if (res.error.code === ErrorCode.VALIDATION) {
-  showFieldErrors(res.error.fields)
+// Backend — a Fastify handler annotates its return with the response type
+async function register(body: ICreateOrUpdateUserPayload): Promise<TCreateOrUpdateUserResponse> {
+  const user = await createUser(body)
+  return { message: 'created', userId: user.id } // or: { code, message } on failure
 }
 ```
 
 ## Modules
 
-| Subpath                | Contents                                                            |
-| ---------------------- | ------------------------------------------------------------------- |
-| `@repo/types`          | Everything below, re-exported.                                      |
-| `@repo/types/common`   | `ID`, `ISODateString`, `Nullable`, `Entity`, `Timestamps`, utils.   |
-| `@repo/types/http`     | `HttpStatus`, `HttpMethod`.                                         |
-| `@repo/types/error`    | `ErrorCode`, `ApiError`, `FieldError`.                              |
-| `@repo/types/response` | `ApiResponse`, `SuccessResponse`, `ErrorResponse`, `ok`, `fail`.    |
-| `@repo/types/pagination` | `PaginationParams`, `Paginated<T>`, `PageMeta`, `buildPageMeta`.   |
-| `@repo/types/domain`   | Domain entities + request payloads (e.g. `User`, `CreateUserPayload`). |
+| Subpath              | Contents                                                                                                                                              |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@repo/types/common` | `ICommonErrorResponse`, `WithError<T>`.                                                                                                               |
+| `@repo/types/auth`   | Auth payloads/responses: `ICreateOrUpdateUserPayload`, `IUserLoginPayload`, `UserJwtPayload`, `TCreateOrUpdateUserResponse`, `TRefreshTokenResponse`. |
+| `@repo/types/health` | `THealthCheckSuccessResponse`.                                                                                                                        |
 
 ## Conventions
 
-- **One module per resource** under `src/domain/`. Each exports an `Entity`
-  interface (what the API returns), a `Create…Payload` (POST body, no
-  server-managed fields), and an `Update…Payload` (usually `Partial<Create…>`).
-- **Responses are always enveloped** in `ApiResponse<T>`. Build them with `ok()`
-  / `fail()` on the server; narrow with `res.ok` (or `isOk`) on the client.
-- Type-only exports cost nothing at runtime — import freely.
+- **One flat module per feature** under `src/` (no `src/domain/` folder). Group
+  a resource's payloads and response shapes in `src/<feature>.ts`.
+- **Naming**: `I`-prefix for interfaces (payloads/entities), `T`-prefix for type
+  aliases (response unions). Wrap fallible responses in `WithError<T>`.
+- Relative imports keep the `.js` extension (`from './common.js'`).
+- Type-only — **no runtime values**. Runtime validation lives in
+  [`@repo/utils`](../utils/README.md) (Zod); for an entity the DB owns, the API
+  returns the Prisma-generated row type rather than a hand-written interface.
 
 ## Scripts
 
-| Script              | Purpose                          |
-| ------------------- | -------------------------------- |
-| `pnpm build`        | Emit `dist/` (JS + `.d.ts`).     |
-| `pnpm dev`          | Watch-compile during development.|
-| `pnpm check-types`  | Type-check without emitting.     |
-| `pnpm lint`         | Lint the package.                |
+| Script             | Purpose                                  |
+| ------------------ | ---------------------------------------- |
+| `pnpm check-types` | Type-check the package (`tsc --noEmit`). |
+| `pnpm lint`        | Lint the package.                        |
+| `pnpm clean`       | Remove `.turbo` caches.                  |

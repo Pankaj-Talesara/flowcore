@@ -1,0 +1,80 @@
+{
+  "Common": {
+    "appName": "Flowcore"
+  },
+  "Nav": {
+    "signIn": "Sign in",
+    "getStarted": "Get started"
+  },
+  "Home": {
+    "badge": "Self-hosted workflow automation",
+    "title": "Wire one tool to another, without the glue code.",
+    "subtitle": "Flowcore is a backend-heavy mini-Zapier you run yourself. Define event-driven automations declaratively — we handle ingestion, queuing, execution, retries, and per-step logging.",
+    "ctaPrimary": "Create your workspace",
+    "ctaSecondary": "Sign in",
+    "features": {
+      "triggers": {
+        "title": "Triggers",
+        "body": "Start a workflow from a unique webhook URL or a cron schedule."
+      },
+      "steps": {
+        "title": "Steps",
+        "body": "Chain http, ai_summarize, slack_post, and jira_fetch. Output N feeds N+1."
+      },
+      "executions": {
+        "title": "Executions",
+        "body": "Every run is queued, retried with backoff, and logged step by step."
+      }
+    }
+  },
+  "BrandPanel": {
+    "title": "Wire any tool to any other.",
+    "subtitle": "Event-driven automations, defined declaratively. We handle the queue, retries, scheduling, and per-step logs — you describe the flow.",
+    "footer": "Self-hosted · multi-tenant · JWT auth · per-workspace isolation",
+    "stages": {
+      "trigger": { "badge": "TRIGGER", "title": "Jira ticket created" },
+      "step1": { "badge": "STEP 1", "title": "ai_summarize" },
+      "step2": { "badge": "STEP 2", "title": "slack_post" },
+      "execution": { "badge": "EXECUTION", "title": "succeeded · 842ms" }
+    }
+  },
+  "Fields": {
+    "name": "Name",
+    "email": "Email",
+    "password": "Password",
+    "namePlaceholder": "Ada Lovelace",
+    "emailPlaceholder": "you@company.com",
+    "passwordPlaceholder": "••••••••",
+    "passwordHint": "8–30 characters, letters and numbers."
+  },
+  "Login": {
+    "title": "Welcome back",
+    "subtitle": "Sign in to manage your workflows and executions.",
+    "submit": "Sign in",
+    "submitPending": "Signing in…",
+    "noAccount": "New to Flowcore?",
+    "createAccount": "Create an account",
+    "missingFields": "Enter your email and password."
+  },
+  "Signup": {
+    "title": "Create your workspace",
+    "subtitle": "Start building event-driven automations in minutes.",
+    "submit": "Create account",
+    "submitPending": "Creating account…",
+    "haveAccount": "Already have an account?",
+    "signIn": "Sign in",
+    "validation": {
+      "name": "Name must be 3–15 letters or spaces, with no special characters.",
+      "email": "Enter a valid email address.",
+      "password": "Password must be 8–30 characters, letters and numbers only."
+    }
+  },
+  "Errors": {
+    "GENERIC": "Something went wrong. Please try again.",
+    "NETWORK_ERROR": "Could not reach the server. Is the API running?",
+    "INVALID_EMAIL": "That email address isn't valid or isn't registered.",
+    "INVALID_PASSWORD": "Incorrect password. Please try again.",
+    "INVALID_NAME": "Name should be 3–15 letters with no special characters.",
+    "EMAIL_ALREADY_EXISTS": "An account with that email already exists."
+  }
+}
